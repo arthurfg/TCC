@@ -19,24 +19,33 @@ Os autores optaram por utilizar a POF de 2008/2009, enquanto eu optei por utiliz
 De maneira a simplificar o peso computacional, rodarei as análises somente para o Estado do Acre.  
 **Unidade de consumo = Família** (A unidade de consumo compreende um único morador ou conjunto de moradores que compartilham da mesma fonte de alimentação, isto é, utilizam um mesmo estoque de alimentos e/ou realizam um conjunto de despesas alimentares comuns. Nos casos em que não existia estoque de alimentos nem despesas alimentares comuns, a identificação ocorreu através das despesas com moradia.)
 
-Variáveis utilizadas:
+**Variáveis utilizadas:**
 
-Sub-amostras: 0 a 5 anos, 5 a 10 anos, 10 a 19 anos.
-Área geográfica: Urbano e Rural.
-Bolsa Famílias: Com e sem PBF (ver os critérios).
-Variáveis regionais: As 5 grandes regiões do BR.
-Variáveis do domicílio: Morador-Comodo, Infra-Domic, Infra-Vizinhança, Agua, Banheiros, Esgoto, Energia.
-Variáveis da pessoa de referência: Idade, Anos-Estudo, Masculino, Branco, Formal, Horas-Trabalhadas
+* Sub-amostras: 0 a 5 anos, 5 a 10 anos, 10 a 19 anos.
+
+* Área geográfica: Urbano e Rural.
+
+* Bolsa Famílias: Com e sem PBF (ver os critérios).
+
+* Variáveis regionais: As 5 grandes regiões do BR.
+
+* Variáveis do domicílio: Morador-Comodo, Infra-Domic, Infra-Vizinhança, Agua, Banheiros, Esgoto, Energia.
+
+* Variáveis da pessoa de referência: Idade, Anos-Estudo, Masculino, Branco, Formal, Horas-Trabalhadas
 
 ```{r cars}
-# Pacotes ####
+
 library(magrittr)
 library(dplyr)
+setwd("C:/Arthur/TCC/TCC/RDS")
+acre_or<- readRDS("OUTROS_RENDIMENTOS_ACRE.rds")
 
 acre_or %>%
   #filter(V9001==5400101)%>%
   mutate(Codigo = trunc(V9001/100)) -> acre_or2
 
+setwd("C:/Arthur/TCC/TCC/Microdados")
+tradutor_rendimento <- readxl::read_excel("Tradutor_Rendimento.xls") 
 
 tradutor_rendimento %>%
   mutate(Codigo = as.numeric(Codigo)) -> tradutor_rendimento
@@ -51,7 +60,7 @@ join <- left_join(acre_or2, tradutor_rendimento,by = "Codigo")
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+boxplot(join$RENDA_TOTAL)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
