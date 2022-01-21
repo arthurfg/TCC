@@ -1,11 +1,11 @@
 # LEITURA DOS DADOS DA POF 2017-2018 - R
 
   
-# "....." indica a pasta/diretório de trabalho no HD local separados por "/"
+# "....." indica a pasta/diret?rio de trabalho no HD local separados por "/"
 # onde se encontram os arquivos .txt descompactados do arquivo Dados_aaaammdd.zip
 # Exemplo: setwd("c:/POF2018/Dados_aaaammdd/")
 
-setwd(".....") 
+setwd("C:/Arthur/TCC/TCC/Microdados/") 
 
 
 # REGISTRO - MORADOR
@@ -80,6 +80,7 @@ CADERNETA_COLETIVA <-
            )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(CADERNETA_COLETIVA,"CADERNETA_COLETIVA.rds")
 
 
@@ -101,6 +102,7 @@ DESPESA_INDIVIDUAL <-
            )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(DESPESA_INDIVIDUAL,"DESPESA_INDIVIDUAL.rds")
 
 
@@ -120,10 +122,12 @@ ALUGUEL_ESTIMADO <-
            )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(ALUGUEL_ESTIMADO,"ALUGUEL_ESTIMADO.rds")
 
 
 # REGISTRO - RENDIMENTO DO TRABALHO
+setwd("C:/Arthur/TCC/TCC/Microdados")
 
 RENDIMENTO_TRABALHO <- 
   read.fwf("RENDIMENTO_TRABALHO.txt" 
@@ -146,10 +150,12 @@ RENDIMENTO_TRABALHO <-
            )
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(RENDIMENTO_TRABALHO,"RENDIMENTO_TRABALHO.rds")
 
 
 # REGISTRO - OUTROS RENDIMENTOS
+setwd("C:/Arthur/TCC/TCC/Microdados")
 
 OUTROS_RENDIMENTOS <- 
   read.fwf("OUTROS_RENDIMENTOS.txt" 
@@ -168,10 +174,12 @@ OUTROS_RENDIMENTOS <-
            )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(OUTROS_RENDIMENTOS,"OUTROS_RENDIMENTOS.rds")
 
 
 # REGISTRO - DOMICILIO
+setwd("C:/Arthur/TCC/TCC/Microdados")
 
 DOMICILIO <- 
   read.fwf("DOMICILIO.txt" 
@@ -193,10 +201,12 @@ DOMICILIO <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(DOMICILIO,"DOMICILIO.rds")
 
 
-# REGISTRO - INVENTÁRIO DE BENS DURÁVEIS
+
+# REGISTRO - INVENT?RIO DE BENS DUR?VEIS
 
 INVENTARIO <- 
   read.fwf("INVENTARIO.txt" 
@@ -212,10 +222,11 @@ INVENTARIO <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(INVENTARIO,"INVENTARIO.rds")
 
 
-# REGISTRO - CARACTERÍSTICAS DA DIETA
+# REGISTRO - CARACTER?STICAS DA DIETA
 
 CARACTERISTICAS_DIETA <- 
   read.fwf("CARACTERISTICAS_DIETA.txt" 
@@ -237,6 +248,7 @@ CARACTERISTICAS_DIETA <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(CARACTERISTICAS_DIETA,"CARACTERISTICAS_DIETA.rds")
 
 
@@ -277,10 +289,12 @@ CONSUMO_ALIMENTAR <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(CONSUMO_ALIMENTAR,"CONSUMO_ALIMENTAR.rds")
 
 
-# REGISTRO - CONDIÇÕES DE VIDA
+# REGISTRO - CONDI??ES DE VIDA
+setwd("C:/Arthur/TCC/TCC/Microdados")
 
 CONDICOES_VIDA <- 
   read.fwf("CONDICOES_VIDA.txt" 
@@ -307,10 +321,11 @@ CONDICOES_VIDA <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(CONDICOES_VIDA,"CONDICOES_VIDA.rds")
 
 
-# REGISTRO - RESTRIÇÃO DE PRODUTOS OU SERVIÇOS DE SAÚDE
+# REGISTRO - RESTRI??O DE PRODUTOS OU SERVI?OS DE SA?DE
 
 RESTRICAO_PRODUTOS_SERVICOS_SAUDE <- 
   read.fwf("RESTRICAO_PRODUTOS_SERVICOS_SAUDE.txt" 
@@ -325,10 +340,11 @@ RESTRICAO_PRODUTOS_SERVICOS_SAUDE <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(RESTRICAO_PRODUTOS_SERVICOS_SAUDE,"RESTRICAO_PRODUTOS_SERVICOS_SAUDE.rds")
 
 
-# REGISTRO - SERVIÇOS NÃO MONETÁRIOS/POF 2
+# REGISTRO - SERVI?OS N?O MONET?RIOS/POF 2
 
 SERVICO_NAO_MONETARIO_POF2 <- 
   read.fwf("SERVICO_NAO_MONETARIO_POF2.txt" 
@@ -346,10 +362,11 @@ SERVICO_NAO_MONETARIO_POF2 <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(SERVICO_NAO_MONETARIO_POF2,"SERVICO_NAO_MONETARIO_POF2.rds")
 
 
-# REGISTRO - SERVIÇOS NÃO MONETÁRIOS/POF 4
+# REGISTRO - SERVI?OS N?O MONET?RIOS/POF 4
 
 SERVICO_NAO_MONETARIO_POF4 <- 
   read.fwf("SERVICO_NAO_MONETARIO_POF4.txt" 
@@ -367,4 +384,5 @@ SERVICO_NAO_MONETARIO_POF4 <-
   )   
 
 # Armazena no HD local arquivo serializado para leituras futuras
+setwd("C:/Arthur/TCC/TCC/RDS")
 saveRDS(SERVICO_NAO_MONETARIO_POF4,"SERVICO_NAO_MONETARIO_POF4.rds")
