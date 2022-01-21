@@ -47,3 +47,4 @@ acre_rt <- rendimento_trabalho %>%
   filter(UF == 12)
 saveRDS(acre_rt, "RENDIMENTO_TRABALHO.rds")
 
+# Primeiro passo: achar 
