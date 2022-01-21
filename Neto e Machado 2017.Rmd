@@ -1,5 +1,6 @@
 ---
 title: "Reproduzindo Neto e Machado (2017)"
+autor: "Arthur Gusmão"
 output: github_document
 ---
 
@@ -7,9 +8,11 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## GitHub Documents
+## Introdução
 
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+O objetivo desse trabalho é reproduzir a análise feita por Neto e Machado em "TRANSFERÊNCIAS CONDICIONAIS DE RENDA E NUTRIÇÃO: EFEITOS DO BOLSA FAMÍLIA NAS ÁREAS RURAIS E URBANAS DO BRASIL". Esse artigo é umas das principais peças da bibliografia do meu TCC e, portanto, conseguir reproduzir o trabalho dos autores trará para mim um ganho interessante na curva de aprendizado em programação (com R), e também na manipulação de grandes bases de dados (como a POF).
+
+Os autores optaram por utilizar a POF de 2008/2009, enquanto eu optei por utilizar a POF de 2017/2018, por ser a base escolhida para o meu TCC.
 
 ## Including Code
 
