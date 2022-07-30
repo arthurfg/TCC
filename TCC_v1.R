@@ -1,7 +1,42 @@
 library(tidyverse)
+library(janitor)
 
-pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds") # nolint
-pof_morador <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_morador_v1.rds") # nolint
+pof_domicilio <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_domicilio.rds") # nolint
+pof_morador <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_morador.rds") # nolint
+pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_rendimento_trabalho.rds") # nolint
+
+#### Tradutores
+
+indice <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/memoria_de_calculo/Indice_Despesa.xls") # nolint
+tradutor <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/tradutores/Tradutor_Despesa_Geral.xls") # nolint
+cadastro <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/documentacao/Cadastro de Produtos.xls",  # nolint
+                             col_types = "text")
+
+cadastro <- cadastro %>% 
+  janitor::clean_names() %>% 
+  mutate(codigo_7 = str_pad(codigo_do_produto, 7, "left", "0"))
+
+cadastro <- cadastro %>% 
+  mutate(codigo_5 = str_sub(codigo_7, 1, -3))
+
+cadastro %>% 
+  group_by(codigo_5) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  filter(n > 1) %>% 
+  arrange(n, codigo_5) %>% 
+  select(quadro, codigo_do_produto, codigo_7, codigo_5, descricao_do_produto, n)
+
+tradutor <- tradutor %>% 
+  janitor::clean_names() %>% 
+  mutate(codigo = str_pad(codigo, 5, "left", "0"),
+         descricao_2 = case_when(descricao_2 == "Despesas de consumo" ~ "Despesas de Consumo",
+                                 TRUE ~ descricao_2))
+
+#### Rendimento do trabalho #####
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>% 
+  mutate(codigo_5 = str_sub(V9001, 1, -3))
+
 
 pof_domicilio %>% glimpse()
 
@@ -34,6 +69,10 @@ pof_morador %>%
 
 pof_morador %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_morador_v1.rds", compress = "gz") # nolint
 pof_domicilio %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds", compress = "gz") # nolint
+pof_rendimento_trabalho %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_rendimento_trabalho_v1.rds", compress = "gz") # nolint
+cadastro %>% write_rds("/Users/apple/Documents/TCC/dados_rds/cadastro_v1.rds", compress = "gz") # nolint
+indice %>% write_rds("/Users/apple/Documents/TCC/dados_rds/indice_v1.rds", compress = "gz") # nolint
+tradutor %>% write_rds("/Users/apple/Documents/TCC/dados_rds/tradutor_v1.rds", compress = "gz") # nolint
 
 
 pof_domicilio <- pof_domicilio %>%
