@@ -12,6 +12,13 @@ tradutor <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/tradutores/
 cadastro <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/documentacao/Cadastro de Produtos.xls",  # nolint
                              col_types = "text")
 
+tradutor_rendimento <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/tradutores/Tradutor_Rendimento.xls") # nolint
+indice_rendimento <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/memoria_de_calculo/Indice_Rendimento.xls") # nolint
+
+tradutor_rendimento <- tradutor_rendimento %>% 
+  janitor::clean_names() %>% 
+  mutate(codigo = str_pad(codigo, 5, "left", "0"))
+
 cadastro <- cadastro %>% 
   janitor::clean_names() %>% 
   mutate(codigo_7 = str_pad(codigo_do_produto, 7, "left", "0"))
@@ -20,28 +27,55 @@ cadastro <- cadastro %>%
   mutate(codigo_5 = str_sub(codigo_7, 1, -3))
 
 cadastro %>% 
-  group_by(codigo_5) %>% 
-  mutate(n = n()) %>% 
-  ungroup() %>% 
-  filter(n > 1) %>% 
-  arrange(n, codigo_5) %>% 
+  group_by(codigo_5) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  arrange(n, codigo_5) %>%
   select(quadro, codigo_do_produto, codigo_7, codigo_5, descricao_do_produto, n)
 
 tradutor <- tradutor %>% 
   janitor::clean_names() %>% 
   mutate(codigo = str_pad(codigo, 5, "left", "0"),
-         descricao_2 = case_when(descricao_2 == "Despesas de consumo" ~ "Despesas de Consumo",
+         descricao_2 = case_when(descricao_2 == "Despesas de consumo" ~ "Despesas de Consumo", # nolint
                                  TRUE ~ descricao_2))
 
 #### Rendimento do trabalho #####
-pof_rendimento_trabalho <- pof_rendimento_trabalho %>% 
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
   mutate(codigo_5 = str_sub(V9001, 1, -3))
 
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>% 
+  left_join(tradutor_rendimento, by = c("codigo_5" = "codigo"))
 
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
+    mutate(valor = V8500_DEFLA)
+
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>% 
+  mutate(valor = as.numeric(valor),
+         FATOR_ANUALIZACAO = as.numeric(FATOR_ANUALIZACAO)) %>% 
+  mutate(valor_fator_anu = valor * FATOR_ANUALIZACAO)
+
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>% 
+  mutate(V9011 = as.numeric(V9011)) %>% 
+  mutate(valor_anualizado = valor_fator_anu * V9011)
+
+
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
+  mutate(NUM_DOM = str_pad(NUM_DOM, 2, "left", "0"),
+         NUM_UC = str_pad(NUM_UC, 2, "left", "0"),
+         id_dom = str_c(COD_UPA, NUM_DOM),
+         id_uc  = str_c(COD_UPA, NUM_DOM, NUM_UC)) %>% 
+  select(id_dom, id_uc, codigo_5, valor_anualizado, PESO_FINAL, V5304, V5314,
+         nivel_0, descricao_0,
+         nivel_1, descricao_1,
+         nivel_2, descricao_2,
+         nivel_3, descricao_3)
+
+######
 pof_domicilio %>% glimpse()
 
 
-pof_domicilio <- pof_domicilio %>% 
+pof_domicilio <- pof_domicilio %>%
   mutate(id_dom = str_c(COD_UPA, NUM_DOM))
 
 
@@ -67,6 +101,8 @@ pof_morador %>%
             numero_pessoas = n_distinct(id_pes),
             numero_linhas = n())
 
+
+###### Salvando em .rds ######
 pof_morador %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_morador_v1.rds", compress = "gz") # nolint
 pof_domicilio %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds", compress = "gz") # nolint
 pof_rendimento_trabalho %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_rendimento_trabalho_v1.rds", compress = "gz") # nolint
@@ -75,6 +111,8 @@ indice %>% write_rds("/Users/apple/Documents/TCC/dados_rds/indice_v1.rds", compr
 tradutor %>% write_rds("/Users/apple/Documents/TCC/dados_rds/tradutor_v1.rds", compress = "gz") # nolint
 
 
+
+##### Selecionando as variáveis ######
 pof_domicilio <- pof_domicilio %>%
     select(V6199, NUM_DOM, id_dom, TIPO_SITUACAO_REG, V0205, V0207, V0209,
     V02111, V0212, V0215) ##V6199 - Insegurança Alimentar
