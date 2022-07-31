@@ -64,12 +64,17 @@ pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
   mutate(NUM_DOM = str_pad(NUM_DOM, 2, "left", "0"),
          NUM_UC = str_pad(NUM_UC, 2, "left", "0"),
          id_dom = str_c(COD_UPA, NUM_DOM),
-         id_uc  = str_c(COD_UPA, NUM_DOM, NUM_UC)) %>% 
-  select(id_dom, id_uc, codigo_5, valor_anualizado, PESO_FINAL, V5304, V5314,
+         id_uc = str_c(COD_UPA, NUM_DOM, NUM_UC),
+         COD_INFORMANTE = str_pad(COD_INFORMANTE, 2, "left", "0"),
+         id_pes = str_c(COD_UPA, NUM_DOM, NUM_UC, COD_INFORMANTE)) %>%
+  select(id_dom, id_pes, id_uc, codigo_5, valor_anualizado,
+         PESO_FINAL, V5304, V5314,
          nivel_0, descricao_0,
          nivel_1, descricao_1,
          nivel_2, descricao_2,
-         nivel_3, descricao_3)
+         nivel_3, descricao_3) %>%
+  drop_na(descricao_0)
+
 
 ######
 pof_domicilio %>% glimpse()
@@ -109,6 +114,7 @@ pof_rendimento_trabalho %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_
 cadastro %>% write_rds("/Users/apple/Documents/TCC/dados_rds/cadastro_v1.rds", compress = "gz") # nolint
 indice %>% write_rds("/Users/apple/Documents/TCC/dados_rds/indice_v1.rds", compress = "gz") # nolint
 tradutor %>% write_rds("/Users/apple/Documents/TCC/dados_rds/tradutor_v1.rds", compress = "gz") # nolint
+pof_join %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds", compress = "gz") # nolint
 
 
 
@@ -124,3 +130,55 @@ pof_morador <- pof_morador %>%
     INSTRUCAO, COMPOSICAO, PC_RENDA_DISP, PC_RENDA_MONET,
     PC_RENDA_NAO_MONET, id_dom, id_uc, id_pes,
     V0404, V0405, ANOS_ESTUDO)
+
+
+#####
+
+pof_rendimento_trabalho2 <- pof_rendimento_trabalho %>%
+    select(id_pes, id_uc, id_dom, V5304, V5314) %>%
+    distinct(id_pes, .keep_all = TRUE)
+
+pof_join <- pof_rendimento_trabalho2 %>%
+    right_join(pof_morador, by = "id_pes")
+
+dim(pof_morador)
+
+distinct(pof_join)
+
+pof_morador %>%
+    drop_na(id_uc) %>%
+    summarise(n = n_distinct(id_pes))
+
+pof_rendimento_trabalho %>%
+    #drop_na(id_uc) %>%
+    summarise(n = n_distinct(id_uc))
+
+pof_join %>%
+    summarise(n = n_distinct(id_pes))
+
+
+teste <- pof_join %>% head(300)
+
+
+pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
+    drop_na(descricao_0)
+
+teste %>%
+    mutate(pr_formal = if_else(V0306 == 1 & V5304 == 1, 1, 0),
+    pr_branco = if_else(V0306 == 1 & V0405 == 1, 1, 0),
+    pr_masculino = if_else(V0306 == 1 & V0404 == 1, 1, 0),
+    pr_idade = if_else(V0306 == 1 & V0404 == 1, 1, 0)) %>% View()
+
+pof_join <- pof_join %>%
+    filter(V0306 == 1) %>%
+    mutate(pr_formal = if_else(V5304 == 1, 1, 0),
+    pr_branco = if_else(V0405 == 1, 1, 0),
+    pr_masculino = if_else(V0404 == 1, 1, 0),
+    pr_idade = V0403,
+    pr_anos_estudo = ANOS_ESTUDO,
+    pr_horas_trabalhadas = V5314) %>%
+    select(id_dom.y, id_pes, id_uc.y, pr_formal, pr_branco, pr_masculino,
+    pr_idade, pr_anos_estudo, pr_horas_trabalhadas) %>%
+    rename(id_uc = id_uc.y) %>%
+    right_join(pof_morador, by = "id_uc")
+
