@@ -1,7 +1,7 @@
 library(tidyverse)
 library(janitor)
 
-pof_domicilio <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_domicilio.rds") # nolint
+pof_domicilio <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_domicilio_v1.rds") # nolint
 pof_morador <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_morador.rds") # nolint
 pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_rendimento_trabalho.rds") # nolint
 
@@ -154,7 +154,7 @@ pof_rendimento_trabalho %>%
     summarise(n = n_distinct(id_uc))
 
 pof_join %>%
-    summarise(n = n_distinct(id_pes))
+    summarise(n = n_distinct(id_dom))
 
 
 teste <- pof_join %>% head(300)
@@ -182,3 +182,20 @@ pof_join <- pof_join %>%
     rename(id_uc = id_uc.y) %>%
     right_join(pof_morador, by = "id_uc")
 
+## Para amanhã: Colocar as características do domicilio, mesmo procedimento de hoje. # nolint
+
+## 3 de Agosto
+pof_join <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds")
+pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds")
+
+
+pof_domicilio %>% 
+  select(V0205, V0207, V0209, V02111, V0212, V0215,
+  V6199, V0213, id_dom) %>%
+  mutate(comodos = V0205,
+   agua_encanada = if_else(V0209 == 3, 0, 1),
+   banheiro = if_else(V02111 >= 1, 1, 0),
+   coleta_lixo = if_else(V0213 <= 2, 1, 0),
+   esgotamento_sanitario = if_else(V0212 == 1 | V0212 == 2, 1, 0),
+   energia_eletrica = if_else(V0215 == 1 | V0215 == 2, 1, 0))
+  
