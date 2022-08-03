@@ -4,8 +4,9 @@ library(janitor)
 pof_domicilio <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_domicilio_v1.rds") # nolint
 pof_morador <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_morador.rds") # nolint
 pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_rendimento_trabalho.rds") # nolint
+pof_condicoes_vida <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_consumo_alimentar.rds") # nolint
 
-#### Tradutores
+#### Tradutores ####
 
 indice <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/memoria_de_calculo/Indice_Despesa.xls") # nolint
 tradutor <- readxl::read_xls("/Users/apple/Documents/curso_pof_drive/tradutores/Tradutor_Despesa_Geral.xls") # nolint
@@ -76,7 +77,13 @@ pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
   drop_na(descricao_0)
 
 
-######
+###### Outros Rendimentos ####
+pof_outros_rendimentos <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_consumo_alimentar.rds") # nolint
+
+
+
+############
+
 pof_domicilio %>% glimpse()
 
 
@@ -145,10 +152,10 @@ dim(pof_morador)
 
 distinct(pof_join)
 
-pof_morador %>%
+teste %>%
     drop_na(id_uc) %>%
-    summarise(n = n_distinct(id_pes))
-
+    summarise(n = n_distinct(id_pes.y))
+summary(teste$pr_formal)
 pof_rendimento_trabalho %>%
     #drop_na(id_uc) %>%
     summarise(n = n_distinct(id_uc))
@@ -187,7 +194,10 @@ pof_join <- pof_join %>%
 ## 3 de Agosto
 pof_join <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds")
 pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds")
+teste <- read_rds("/Users/apple/Documents/TCC/dados_rds/teste_v1.rds")
+pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_rendimento_trabalho_v1.rds")
 
+summary(teste$pr_branco)
 
 teste <- pof_domicilio %>% 
   select(V0205, V0207, V0209, V02111, V0212, V0215,
@@ -198,18 +208,75 @@ teste <- pof_domicilio %>%
    coleta_lixo = if_else(V0213 <= 2, 1, 0),
    esgotamento_sanitario = if_else(V0212 == 1 | V0212 == 2, 1, 0),
    energia_eletrica = if_else(V0215 == 1 | V0215 == 2, 1, 0),
-   infra_domiciliar = res_pca$PC1) %>%
+   infra = ind$`Dim 1`) %>%
    left_join(pof_join, by = "id_dom")
 
 teste %>%
-  select(infra_domiciliar, PC_RENDA_DISP) %>%
-  mutate(renda_pc = as.numeric(PC_RENDA_DISP)) -> teste2
+  select(infra, PC_RENDA_DISP) %>%
+  mutate(renda_pc = as.numeric(PC_RENDA_DISP),
+  infra = infra) %>%
+  filter(renda_pc > 0 & renda_pc < 600) -> teste2
 
-cor.test(teste2$infra_domiciliar, teste2$renda_pc, method = "pearson")
+cor.test(teste2$infra, teste2$renda_pc, method = "pearson")
 
-a <- ggscatter(teste2, x = infra_domiciliar, y = renda_pc, cor.method = "pearson")
-plot(x = teste2$infra_domiciliar, y = teste2$renda_pc )
 
+
+##### POF - Condições de Vida #####
+leitores_vida <- readxl::read_excel("/Users/apple/Documents/curso_pof_drive/documentacao/dicionario_variaveis.xls",
+                                           sheet = "Condições de Vida",
+                                           skip = 2) %>% 
+  janitor::clean_names() %>% 
+  select(posicao_inicial, tamanho, codigo_da_variavel) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(posicao_inicial = as.numeric(posicao_inicial),
+         tamanho = as.numeric(tamanho),
+         posicao_final = posicao_inicial + tamanho - 1) %>% 
+  select(posicao_inicial, tamanho, posicao_final, codigo_da_variavel)
+
+
+colpos_vida <- fwf_positions(start = leitores_vida$posicao_inicial,
+                                  end = leitores_vida$posicao_final,
+                                  col_names = leitores_vida$codigo_da_variavel)
+
+pof_condicoes_vida <- read_fwf(file = "/Users/apple/Documents/curso_pof_drive/dados/CONDICOES_VIDA.txt",
+                          col_positions = colpos_vida,
+                          col_types = cols(.default = col_character()))
+
+pof_condicoes_vida %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_condicoes_vida_v1.rds", compress = "gz") # nolint
+
+
+glimpse(condicoes)
+
+pof_condicoes_vida <- pof_condicoes_vida %>% 
+  mutate(NUM_DOM = str_pad(NUM_DOM, 2, "left", "0"),
+         NUM_UC = str_pad(NUM_UC, 2, "left", "0"),
+         COD_INFORMANTE = str_pad(COD_INFORMANTE, 2, "left", "0"),
+         id_dom = str_c(COD_UPA, NUM_DOM),
+         id_uc  = str_c(COD_UPA, NUM_DOM, NUM_UC),
+         id_pes = str_c(COD_UPA, NUM_DOM, NUM_UC, COD_INFORMANTE))
+
+
+######### PCA ####
+
+
+pof_condicoes_vida %>%
+  select(V61042, V61051, V61053, V61054, V61064, V61066,
+  V61068, V61069, V610610, V610611, id_dom) -> condicoes
+
+condicoes2 <- pof_domicilio %>%
+  select(V0202, V0203, V0204, id_dom)
+
+condicoes <- left_join(condicoes, condicoes2, by = "id_dom")
+
+
+teste2 %>% ggplot(aes(x=renda_pc, y=infra)) +
+  geom_point() +
+  geom_smooth(method=lm , color="red", se=FALSE) 
+
+
+plot(x = teste2$infra, y = teste2$renda_pc )
+
+summary(teste2)
 mean(ind$`Dim 1`)
 
 
@@ -217,11 +284,15 @@ res_mca <- pof_domicilio %>%
   select(V0202, V0203, V0204) %>%
   prcomp(scale = TRUE)
 
-res_pca <- pof_domicilio %>%
-  select(V0202, V0203, V0204) %>%
+res_pca <- condicoes %>%
+  distinct(id_dom, .keep_all = TRUE) %>%
+  select(-id_dom) %>%
   mutate(across(where(is.character), as.numeric)) %>%
   prcomp()
 
+res_pca <- res_pca$x
+res_pca <- as_tibble(res_pca)
+res_pca
 
 
 summary(res_pca)
@@ -230,8 +301,30 @@ summary(res_pca$x)
 
 res_pca <- as_tibble(res_pca$x)
 glimpse(res_pca)
-FactoMineR::MCA(graph = FALSE)
 
+res_mca <- condicoes %>%
+  distinct(id_dom, .keep_all = TRUE) %>%
+  select(-id_dom) %>%
+  FactoMineR::MCA(graph = FALSE)
+
+fviz_mca_var(res_mca, choice = "mca.cor", 
+            repel = TRUE, # Avoid text overlapping (slow)
+            ggtheme = theme_minimal())
+
+fviz_screeplot(res_mca, addlabels = TRUE, ylim = c(0, 45))
+
+fviz_contrib(res_mca, choice = "var", axes = 2, top = 15)
+
+fviz_mca_var(res_mca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # avoid text overlapping (slow)
+             ggtheme = theme_minimal()
+             )
+
+
+ind <- get_mca_ind(res_mca)
+ind
+ind <- as_tibble(ind$coord)
 
 
 library("FactoMineR")
@@ -257,3 +350,7 @@ head(ind$coord)
 head(ind$cos2)
 # Contributions
 head(ind$contrib)
+
+
+
+###### Outros Rendimentos - PBF ######
