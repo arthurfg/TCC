@@ -115,7 +115,7 @@ cadastro %>% write_rds("/Users/apple/Documents/TCC/dados_rds/cadastro_v1.rds", c
 indice %>% write_rds("/Users/apple/Documents/TCC/dados_rds/indice_v1.rds", compress = "gz") # nolint
 tradutor %>% write_rds("/Users/apple/Documents/TCC/dados_rds/tradutor_v1.rds", compress = "gz") # nolint
 pof_join %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds", compress = "gz") # nolint
-
+teste %>% write_rds("/Users/apple/Documents/TCC/dados_rds/teste_v1.rds", compress = "gz") # nolint
 
 
 ##### Selecionando as variáveis ######
@@ -153,7 +153,7 @@ pof_rendimento_trabalho %>%
     #drop_na(id_uc) %>%
     summarise(n = n_distinct(id_uc))
 
-pof_join %>%
+teste %>%
     summarise(n = n_distinct(id_dom))
 
 
@@ -189,7 +189,7 @@ pof_join <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds")
 pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds")
 
 
-pof_domicilio %>% 
+teste <- pof_domicilio %>% 
   select(V0205, V0207, V0209, V02111, V0212, V0215,
   V6199, V0213, id_dom) %>%
   mutate(comodos = V0205,
@@ -197,5 +197,63 @@ pof_domicilio %>%
    banheiro = if_else(V02111 >= 1, 1, 0),
    coleta_lixo = if_else(V0213 <= 2, 1, 0),
    esgotamento_sanitario = if_else(V0212 == 1 | V0212 == 2, 1, 0),
-   energia_eletrica = if_else(V0215 == 1 | V0215 == 2, 1, 0))
-  
+   energia_eletrica = if_else(V0215 == 1 | V0215 == 2, 1, 0),
+   infra_domiciliar = res_pca$PC1) %>%
+   left_join(pof_join, by = "id_dom")
+
+teste %>%
+  select(infra_domiciliar, PC_RENDA_DISP) %>%
+  mutate(renda_pc = as.numeric(PC_RENDA_DISP)) -> teste2
+
+cor.test(teste2$infra_domiciliar, teste2$renda_pc, method = "pearson")
+
+a <- ggscatter(teste2, x = infra_domiciliar, y = renda_pc, cor.method = "pearson")
+plot(x = teste2$infra_domiciliar, y = teste2$renda_pc )
+
+mean(ind$`Dim 1`)
+
+
+res_mca <- pof_domicilio %>%
+  select(V0202, V0203, V0204) %>%
+  prcomp(scale = TRUE)
+
+res_pca <- pof_domicilio %>%
+  select(V0202, V0203, V0204) %>%
+  mutate(across(where(is.character), as.numeric)) %>%
+  prcomp()
+
+
+
+summary(res_pca)
+plot(res_pca, type = "l")
+summary(res_pca$x)
+
+res_pca <- as_tibble(res_pca$x)
+glimpse(res_pca)
+FactoMineR::MCA(graph = FALSE)
+
+
+
+library("FactoMineR")
+library("factoextra")
+
+data(poison)
+ind <- as_tibble(ind$contrib)
+
+poison.active <- poison[1:55, 5:15]
+
+
+fviz_screeplot(res_mca, addlabels = TRUE, ylim = c(0, 45))
+fviz_mca_var(res_mca, choice = "mca.cor", 
+            repel = TRUE, # Avoid text overlapping (slow)
+            ggtheme = theme_minimal())
+
+
+ind <- get_mca_ind(res_mca)
+ind
+
+head(ind$coord)
+# Quality of representation
+head(ind$cos2)
+# Contributions
+head(ind$contrib)
