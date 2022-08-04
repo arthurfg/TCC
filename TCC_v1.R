@@ -78,10 +78,48 @@ pof_rendimento_trabalho <- pof_rendimento_trabalho %>%
 
 
 ###### Outros Rendimentos ####
-pof_outros_rendimentos <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_consumo_alimentar.rds") # nolint
+pof_outros_rendimentos <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_outros_rendimentos.rds") # nolint
+
+pof_outros_rendimentos <- pof_outros_rendimentos %>%
+  mutate(codigo_5 = str_sub(V9001, 1, -3))
+
+pof_outros_rendimentos <- pof_outros_rendimentos %>% 
+  left_join(tradutor_rendimento, by = c("codigo_5" = "codigo"))
+
+pof_outros_rendimentos <- pof_outros_rendimentos %>%
+    mutate(valor = V8500_DEFLA)
+
+pof_outros_rendimentos <- pof_outros_rendimentos %>% 
+  mutate(valor = as.numeric(valor),
+         FATOR_ANUALIZACAO = as.numeric(FATOR_ANUALIZACAO)) %>% 
+  mutate(valor_fator_anu = valor * FATOR_ANUALIZACAO)
+
+pof_outros_rendimentos <- pof_outros_rendimentos %>% 
+  mutate(V9011 = as.numeric(V9011)) %>% 
+  mutate(valor_anualizado = valor_fator_anu * V9011)
 
 
+pof_outros_rendimentos <- pof_outros_rendimentos %>%
+  mutate(NUM_DOM = str_pad(NUM_DOM, 2, "left", "0"),
+         NUM_UC = str_pad(NUM_UC, 2, "left", "0"),
+         id_dom = str_c(COD_UPA, NUM_DOM),
+         id_uc = str_c(COD_UPA, NUM_DOM, NUM_UC),
+         COD_INFORMANTE = str_pad(COD_INFORMANTE, 2, "left", "0"),
+         id_pes = str_c(COD_UPA, NUM_DOM, NUM_UC, COD_INFORMANTE)) %>%
+  select(id_dom, id_pes, id_uc, codigo_5, valor_anualizado,
+         PESO_FINAL, COD_IMPUT_VALOR, QUADRO,
+         nivel_0, descricao_0,
+         nivel_1, descricao_1,
+         nivel_2, descricao_2,
+         nivel_3, descricao_3) %>%
+  drop_na(descricao_0)
 
+pof_outros_rendimentos %>%
+  #filter(QUADRO == 54) %>%
+  summarise(nas = sum(is.na(valor_anualizado)))
+
+
+View(head(pof_outros_rendimentos))
 ############
 
 pof_domicilio %>% glimpse()
@@ -123,6 +161,7 @@ indice %>% write_rds("/Users/apple/Documents/TCC/dados_rds/indice_v1.rds", compr
 tradutor %>% write_rds("/Users/apple/Documents/TCC/dados_rds/tradutor_v1.rds", compress = "gz") # nolint
 pof_join %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds", compress = "gz") # nolint
 teste %>% write_rds("/Users/apple/Documents/TCC/dados_rds/teste_v1.rds", compress = "gz") # nolint
+pof_outros_rendimentos %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_outros_rendimentos_v1.rds", compress = "gz") # nolint
 
 
 ##### Selecionando as variáveis ######
