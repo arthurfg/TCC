@@ -118,6 +118,27 @@ pof_outros_rendimentos %>%
   #filter(QUADRO == 54) %>%
   summarise(nas = sum(is.na(valor_anualizado)))
 
+pof_outros_rendimentos <- pof_outros_rendimentos %>%
+  mutate(bolsa_familia = if_else(nivel_3 == 124, 1, 0))
+
+
+pof_outros_rendimentos %>%
+  filter(nivel_3 == 124) %>%
+  group_by(id_uc) %>%
+  summarise(numero_pessoas = sum(bolsa_familia)) %>%
+  pull(id_uc) -> uc_pbf
+
+pof_outros_rendimentos %>%
+  filter(nivel_3 == 124) %>%
+  summarise(n = n_distinct(id_pes))
+
+
+
+pof_join %>%
+  group_by(id_dom) %>%
+  summarise(numero_pessoas = n_distinct(id_pes.y)) 
+
+
 
 View(head(pof_outros_rendimentos))
 ############
@@ -200,7 +221,7 @@ pof_rendimento_trabalho %>%
     summarise(n = n_distinct(id_uc))
 
 teste %>%
-    summarise(n = n_distinct(id_dom))
+    summarise(n = n_distinct(id_uc))
 
 
 teste <- pof_join %>% head(300)
@@ -235,6 +256,7 @@ pof_join <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_join_v1.rds")
 pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1.rds")
 teste <- read_rds("/Users/apple/Documents/TCC/dados_rds/teste_v1.rds")
 pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_rendimento_trabalho_v1.rds")
+pof_outros_rendimentos <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_outros_rendimentos_v1.rds") # nolint
 
 summary(teste$pr_branco)
 
@@ -259,6 +281,57 @@ teste %>%
 cor.test(teste2$infra, teste2$renda_pc, method = "pearson")
 
 
+teste2 <- teste %>%
+  right_join(pof_outros_rendimentos, by = "id_dom")
+
+glimpse(teste2)
+
+teste2 %>%
+  summarise(n = n_distinct(id_pes.y))
+
+teste <- teste %>%
+  mutate(bolsa_familia = if_else(id_uc %in% uc_pbf, 1, 0)) 
+
+teste %>%
+  filter(V0403 < 19, bolsa_familia == 1)
+
+
+####### PAREI AQUI #########
+criancas_0_5 <- teste %>%
+  filter(id_dom %in% dom_uc) %>%
+  mutate(idade = as.numeric(V0403)) %>%
+  filter(V0306 != 17 & 18 & 19) %>%
+  filter(idade <= 5) 
+
+criancas_5_10 <- teste %>%
+  filter(id_dom %in% dom_uc) %>%
+  mutate(idade = as.numeric(V0403)) %>%
+  filter(V0306 != 17 & 18 & 19) %>%
+  filter(idade >= 5 & idade <= 10)
+
+
+criancas_10_19 <- teste %>%
+  filter(id_dom %in% dom_uc) %>%
+  mutate(idade = as.numeric(V0403)) %>%
+  filter(V0306 != 17 & 18 & 19) %>%
+  filter(idade >= 10 & idade <= 19)
+
+summary(as.numeric(criancas_5_10$pr_idade))
+
+criancas_10_19 %>%
+  filter(PC_RENDA_MONET < 200)
+  summarise(n = n_distinct(id_uc))
+
+
+
+
+summary(as.numeric(teste$V0403))
+
+teste %>%
+  group_by(id_dom) %>%
+  summarise(qtds_ucs = sum(n_distinct(id_uc))) %>%
+  filter(qtds_ucs <= 1) %>%
+  pull(id_dom) -> dom_uc     ## domicilios com mais de uma UC
 
 ##### POF - Condições de Vida #####
 leitores_vida <- readxl::read_excel("/Users/apple/Documents/curso_pof_drive/documentacao/dicionario_variaveis.xls",
