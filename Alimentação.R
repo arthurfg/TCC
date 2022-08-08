@@ -52,7 +52,6 @@ pof_alimentacao1 <- pof_alimentacao %>%
   group_by(id_uc) %>% 
   mutate(despesa_total_alimentacao = sum(valor_anualizado, na.rm = TRUE)) %>% 
   ungroup() %>% 
-  summarise(ucs = n_distinct(id_dom))
   distinct(id_uc, .keep_all = TRUE)
 
 pof_join_ex1 <- pof_morador_ex1 %>% 
@@ -62,5 +61,5 @@ pof_join_ex1 <- pof_morador_ex1 %>%
 
 pof_join_ex1 %>%
   group_by(id_uc) %>%
-  mutate(despesa_mensal_alimentacao = despesa_total/12) %>%
+  mutate(despesa_mensal_alimentacao = despesa_total_alimentacao/12) %>%
   summarise(media_alimentacao = mean(despesa_mensal_alimentacao)) 
