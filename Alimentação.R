@@ -121,7 +121,7 @@ per_capita_alimentacao <- pof_join_ex1 %>%
             #lanches = sum(a_lanches*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
             #cerveja = sum(a_cervejas_chopes_e_outras_bebidas_alcoolicas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
             #alimentacao_light = sum(a_alimentacao_light_e_diet*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
-            #outras = sum(a_outras*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL))
+            outras = sum(a_outras*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL))
 
 per_capita_alimentacao2 <- pof_join_ex2 %>%
   select(-starts_with("V0")) %>% 
