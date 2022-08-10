@@ -48,7 +48,7 @@ pof_morador_ex1 <- pof_morador %>%
 ### Testando p/ as despesas com Alimentação - nível_0_alimentacao == 0
 
 pof_alimentacao1 <- pof_alimentacao %>% 
-  filter(nivel_0_alimentacao == 0) %>%
+  filter(nivel_2_alimentacao == 107) %>%
   group_by(id_uc) %>% 
   mutate(despesa_total_alimentacao = sum(valor_anualizado, na.rm = TRUE)) %>% 
   ungroup() %>% 
@@ -57,9 +57,89 @@ pof_alimentacao1 <- pof_alimentacao %>%
 pof_join_ex1 <- pof_morador_ex1 %>% 
   left_join(pof_alimentacao1, by = "id_uc")
 
+pof_join_ex2 <- pof_morador_ex1 %>% 
+  left_join(pof_alimentacao2, by = "id_uc")
+
+
 ### Teoricamente a media de gastos cm alimentacao por UC
 
 pof_join_ex1 %>%
   group_by(id_uc) %>%
-  mutate(despesa_mensal_alimentacao = despesa_total_alimentacao/12) %>%
-  summarise(media_alimentacao = mean(despesa_mensal_alimentacao)) 
+  #mutate(despesa_mensal_alimentacao = despesa_total_alimentacao/12) %>%
+  summarise(media_alimentacao = sum(despesa_total_alimentacao*PESO_FINAL.x)/sum(PESO_FINAL.x)/12) %>% summary()
+
+
+pof_alimentacao1 <- pof_alimentacao %>%
+  select(id_dom, id_uc, valor_anualizado, PESO_FINAL,
+  descricao_0_alimentacao, descricao_1_alimentacao, descricao_2_alimentacao) %>%
+  pivot_wider(names_from = descricao_2_alimentacao,
+              values_from = valor_anualizado,
+              values_fn = ~sum(.x, na.rm = TRUE),
+              names_glue = "a_{descricao_2_alimentacao}" ) %>%
+    janitor::clean_names()%>%
+    group_by(id_uc) %>% 
+    distinct(id_uc, .keep_all = TRUE)
+
+pof_alimentacao2 <- pof_alimentacao %>%
+  select(id_dom, id_uc, valor_anualizado, PESO_FINAL, descricao_1_alimentacao) %>%
+  pivot_wider(names_from = descricao_1_alimentacao,
+              values_from = valor_anualizado,
+              values_fn = ~sum(.x, na.rm = TRUE),
+              names_glue = "a_{descricao_1_alimentacao}" ) %>%
+    janitor::clean_names()%>%
+    group_by(id_uc) %>% 
+    distinct(id_uc, .keep_all = TRUE)
+
+glimpse(pof_alimentacao2)
+
+divide <- function(x) (x/12)
+per_capita_alimentacao <- pof_join_ex1 %>%
+  select(-starts_with("V0")) %>% 
+  group_by(id_uc) %>% 
+  mutate_at(vars(starts_with("a_")), divide) %>%
+  mutate(peso_final = as.numeric(peso_final)) %>%
+  summarise(carnes_pescados = sum(a_carnes_visceras_e_pescados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            cereais = sum(a_cereais_leguminosas_e_oleaginosas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            farinhas = sum(a_farinhas_feculas_e_massas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            tuberculos = sum(a_tuberculos_e_raizes*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            acucares = sum(a_acucares_e_derivados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            legumes_verduras = sum(a_legumes_e_verduras*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            frutas = sum(a_frutas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            aves_ovos = sum(a_aves_e_ovos*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            leites_derivados = sum(a_leites_e_derivados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            panificados = sum(a_panificados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            oleos_gorduras = sum(a_oleos_e_gorduras*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            bebidas_infusoes = sum(a_bebidas_e_infusoes*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            enlatados = sum(a_enlatados_e_conservas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            sal_condimentos = sum(a_sal_e_condimentos*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            preparados = sum(a_alimentos_preparados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            outros = sum(a_outros*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #almoco_jantar = sum(a_almoco_e_jantar*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #cafe_leite = sum(a_cafe_leite_cafe_leite_e_chocolate*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #saunduiches = sum(a_sanduiches_e_salgados*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #refrigerantes = sum(a_refrigerantes_e_outras_bebidas_nao_alcoolicas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #lanches = sum(a_lanches*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #cerveja = sum(a_cervejas_chopes_e_outras_bebidas_alcoolicas*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #alimentacao_light = sum(a_alimentacao_light_e_diet*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            #outras = sum(a_outras*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL))
+
+per_capita_alimentacao2 <- pof_join_ex2 %>%
+  select(-starts_with("V0")) %>% 
+  group_by(id_uc) %>% 
+  mutate_at(vars(starts_with("a_")), divide) %>%
+  mutate(peso_final = as.numeric(peso_final)) %>%
+  summarise(fora_de_casa = sum(a_alimentacao_fora_do_domicilio*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL),
+            dentro_de_casa = sum(a_alimentacao_no_domicilio*PESO_FINAL, na.rm = TRUE)/sum(PESO_FINAL))
+
+per_capita_alimentacao <- left_join(per_capita_alimentacao, per_capita_alimentacao2, by = "id_uc")
+
+set_names(1:4, c("a", "b", "c", "d"))
+set_names(1:4, letters[1:4])
+a<-set_names(1:4, "a", "b", "c", "d")
+names(pof_alimentacao)
+summarise(n = n_distinct(id_uc))
+
+  pof_alimentacao %>%
+    dplyr::group_by(id_dom, id_uc, PESO_FINAL, descricao_0_alimentacao, descricao_1_alimentacao, descricao_2_alimentacao) %>%
+    dplyr::summarise(n = dplyr::n(), .groups = "drop") %>% head(50) %>% View()
+    dplyr::filter(n > 1L) 
