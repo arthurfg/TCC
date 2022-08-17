@@ -1,6 +1,7 @@
 library(tidyverse)
 library(janitor)
 
+
 pof_domicilio <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_domicilio_v1.rds") # nolint
 pof_morador <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_morador.rds") # nolint
 pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/curso_pof_drive/dados/dados_rds/pof_rendimento_trabalho.rds") # nolint
@@ -162,16 +163,42 @@ pof_morador <- pof_morador %>%
          id_uc  = str_c(COD_UPA, NUM_DOM, NUM_UC),
          id_pes = str_c(COD_UPA, NUM_DOM, NUM_UC, COD_INFORMANTE))
 
+pof_morador <- pof_morador %>% 
+  mutate(NUM_DOM = str_pad(NUM_DOM, 2, "left", "0"),
+         NUM_UC = str_pad(NUM_UC, 2, "left", "0"),
+         COD_INFORMANTE = str_pad(COD_INFORMANTE, 2, "left", "0"),
+         id_dom = str_c(COD_UPA, NUM_DOM),
+         id_uc  = str_c(COD_UPA, NUM_DOM, NUM_UC),
+         id_pes = str_c(COD_UPA, NUM_DOM, NUM_UC, COD_INFORMANTE),
+         PESO_FINAL = as.numeric(PESO_FINAL),
+         RENDA_TOTAL = as.numeric(RENDA_TOTAL),
+         PC_RENDA_DISP = as.numeric(PC_RENDA_DISP),
+         PC_RENDA_MONET = as.numeric(PC_RENDA_MONET),
+         V0403 = as.numeric(V0403),
+         id = 1)
+
+pof_morador <- pof_morador %>%
+  filter(V0306 != "18" & V0306 != "19") %>% 
+  group_by(id_uc) %>% 
+  mutate(n_uc = n()) %>%
+  ungroup() %>% 
+  mutate(RENDA_TOTAL_PC = RENDA_TOTAL / n_uc) %>%
+  select(id_dom, RENDA_TOTAL_PC, TIPO_SITUACAO_REG, n_uc,PC_RENDA_DISP, PC_RENDA_MONET)
+
 pof_domicilio %>%
   summarise(numero_domicilios = n_distinct(id_dom),
             numero_linhas = n())
 
 pof_morador %>%
   summarise(numero_domicilios = n_distinct(id_dom),
-            numero_uc = n_distinct(id_uc),
-            numero_pessoas = n_distinct(id_pes),
+            #numero_pessoas = n_distinct(id_pes),
             numero_linhas = n())
 
+
+pof_morador %>%
+  group_by(id_dom) %>%
+  mutate(moradores = sum(n_distinct(id_pes)))
+  summarise(moradores = n_distinct(id_pes))
 
 ###### Salvando em .rds ######
 pof_morador %>% write_rds("/Users/apple/Documents/TCC/dados_rds/pof_morador_v1.rds", compress = "gz") # nolint
@@ -193,10 +220,7 @@ pof_domicilio <- pof_domicilio %>%
 pof_morador <- pof_morador %>%
     #filter(V0403 <=19) %>% ## V0403 - Idade
     #filter(V0306 != 01 & 17 & 18 & 19 ) %>% ## V0306 - Condição na UC - filho, neto e etc... # nolint
-    select(UF, ESTRATO_POF, PESO, PESO_FINAL, V0403, V0306,
-    INSTRUCAO, COMPOSICAO, PC_RENDA_DISP, PC_RENDA_MONET,
-    PC_RENDA_NAO_MONET, id_dom, id_uc, id_pes,
-    V0404, V0405, ANOS_ESTUDO)
+    select(id_dom, RENDA_TOTAL)
 
 
 #####
@@ -257,6 +281,7 @@ pof_domicilio <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_domicilio_v1
 teste <- read_rds("/Users/apple/Documents/TCC/dados_rds/teste_v1.rds")
 pof_rendimento_trabalho <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_rendimento_trabalho_v1.rds")
 pof_outros_rendimentos <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_outros_rendimentos_v1.rds") # nolint
+pof_morador <- read_rds("/Users/apple/Documents/TCC/dados_rds/pof_morador_v1.rds")
 
 summary(teste$pr_branco)
 
@@ -295,6 +320,15 @@ teste <- teste %>%
 teste %>%
   filter(V0403 < 19, bolsa_familia == 1)
 
+pof_morador <- pof_morador %>%
+  mutate(id_dom = as.numeric(id_dom)) %>%
+  distinct(id_dom, .keep_all = TRUE)
+                             
+
+teste <- teste %>%
+  mutate(id_dom = as.numeric(id_dom)) %>%
+  right_join(pof_morador, by = "id_dom")
+
 
 ####### PAREI AQUI #########
 criancas_0_5 <- teste %>%
@@ -319,10 +353,71 @@ criancas_10_19 <- teste %>%
 summary(as.numeric(criancas_5_10$pr_idade))
 
 criancas_10_19 %>%
-  filter(PC_RENDA_MONET < 200)
-  summarise(n = n_distinct(id_uc))
+  mutate(PC_RENDA_DISP = as.numeric(PC_RENDA_DISP)) %>%
+  filter(PC_RENDA_DISP < 300) 
+
+criancas_10_19 <- pof_morador %>%
+  filter(id_dom %in% dom_uc) %>%
+  distinct(id_dom, .keep_all =  TRUE) %>%
+  right_join(criancas_10_19, by = "id_dom") 
 
 
+criancas_0_5 <- pof_morador %>%
+  filter(id_dom %in% dom_uc) %>%
+  distinct(id_dom, .keep_all =  TRUE) %>%
+  right_join(criancas_0_5, by = "id_dom") 
+
+criancas_5_10 <- pof_morador %>%
+  filter(id_dom %in% dom_uc) %>%
+  distinct(id_dom, .keep_all =  TRUE) %>%
+  right_join(criancas_5_10, by = "id_dom")
+
+
+
+criancas_0_5 %>% write_rds("/Users/apple/Documents/TCC/dados_rds/criancas_0_5.rds", compress = "gz") # nolint
+criancas_5_10 %>% write_rds("/Users/apple/Documents/TCC/dados_rds/criancas_5_10.rds", compress = "gz") # nolint
+criancas_10_19 %>% write_rds("/Users/apple/Documents/TCC/dados_rds/criancas_10_19.rds", compress = "gz") # nolint
+
+
+### Criando dummies de região
+sudeste <- c(35, 33, 32, 31)
+sul <- c(43, 42, 41)
+centro_oeste <- c(50, 51, 52, 53)
+norte <- c(12, 14, 11, 13, 15, 17, 16)
+nordeste <- c(29, 22, 21, 28, 27, 26, 25, 24, 23 )
+
+criancas_0_5 <- criancas_0_5 %>%
+  mutate(UF = as.numeric(UF),
+  sudeste = if_else(UF %in% sudeste, 1, 0),
+  sul = if_else(UF %in% sul, 1, 0),
+  centro_oeste = if_else(UF %in% centro_oeste, 1, 0),
+  norte = if_else(UF %in% norte, 1, 0),
+  nordeste = if_else(UF %in% nordeste, 1, 0))
+
+criancas_5_10 <- criancas_5_10 %>%
+  mutate(UF = as.numeric(UF),
+  sudeste = if_else(UF %in% sudeste, 1, 0),
+  sul = if_else(UF %in% sul, 1, 0),
+  centro_oeste = if_else(UF %in% centro_oeste, 1, 0),
+  norte = if_else(UF %in% norte, 1, 0),
+  nordeste = if_else(UF %in% nordeste, 1, 0))
+
+criancas_10_19 <- criancas_10_19 %>%
+  mutate(UF = as.numeric(UF),
+  sudeste = if_else(UF %in% sudeste, 1, 0),
+  sul = if_else(UF %in% sul, 1, 0),
+  centro_oeste = if_else(UF %in% centro_oeste, 1, 0),
+  norte = if_else(UF %in% norte, 1, 0),
+  nordeste = if_else(UF %in% nordeste, 1, 0))
+
+criancas_0_5 <- criancas_0_5 %>%
+  mutate(across(where(is.character), as.numeric))
+
+criancas_5_10 <- criancas_5_10 %>%
+  mutate(across(where(is.character), as.numeric))
+
+criancas_10_19 <- criancas_10_19 %>%
+  mutate(across(where(is.character), as.numeric))
 
 
 summary(as.numeric(teste$V0403))
@@ -466,3 +561,242 @@ head(ind$contrib)
 
 
 ###### Outros Rendimentos - PBF ######
+
+
+#### Matching
+library("MatchIt")
+library("lmtest")
+library("sandwich")
+library("boot")
+
+data("lalonde")
+
+criancas_10_19 <- read_rds("/Users/apple/Documents/TCC/dados_rds/criancas_10_19.rds")
+criancas_0_5 <- read_rds("/Users/apple/Documents/TCC/dados_rds/criancas_0_5.rds")
+
+per_capita_alimentacao <- per_capita_alimentacao %>%
+    mutate(id_uc = as.numeric(id_uc))
+
+pc_teste <- pc_teste %>%
+    mutate(id_uc = as.numeric(id_uc))
+
+
+criancas_10_19 <- criancas_10_19 %>%
+  mutate(id_uc = as.numeric(id_uc)) %>%
+  left_join(per_capita_alimentacao, by = "id_uc") 
+
+
+
+criancas_10_19 <- criancas_10_19 %>%
+  mutate(id_uc = as.numeric(id_uc)) %>%
+  left_join(pc_teste, by = "id_uc") 
+
+
+criancas_0_5 <- criancas_0_5 %>%
+  mutate(id_uc = as.numeric(id_uc)) %>%
+  left_join(pc_teste, by = "id_uc") 
+
+match_data <- criancas_0_5 %>%
+  #select(id_dom, RENDA_TOTAL_PC, sudeste, sul, centro_oeste, norte, nordeste,
+  #agua_encanada, banheiro, esgotamento_sanitario, energia_eletrica, n_uc,
+  #comodos, pr_idade, pr_anos_estudo, pr_masculino, pr_branco,
+  # pr_formal, pr_horas_trabalhadas, bolsa_familia, PESO_FINAL, V6199, idade ) %>%
+   mutate(inseguranca_alimentar = if_else(V6199 != 1, 1, 0))%>%
+   mutate(inseguranca_grave = if_else(V6199 == 4, 1, 0),
+          inseguranca_moderada = if_else(V6199 == 3, 1, 0),
+          inseguranca_leve = if_else(V6199 == 2, 1, 0)) %>%
+   distinct(id_dom, .keep_all = TRUE) %>%
+   mutate(pc_gasto = media_alimentacao/n_uc) %>%
+   mutate(maior = if_else(RENDA_TOTAL_PC > pc_gasto, 1, 0),
+          menor = if_else(pc_gasto > 0.20*RENDA_TOTAL_PC, 1, 0)) %>%
+   filter(maior == 1, menor ==1 ) %>%
+   filter(RENDA_TOTAL_PC < 400)
+
+library("ggpubr")
+ggscatter(match_data, x = "RENDA_TOTAL_PC", y = "pc_gasto", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "renda_pc", ylab = "despesa dentro de casa")
+
+
+match_data <- criancas_0_5 %>%
+  select(id_dom, RENDA_TOTAL_PC, sudeste, sul, centro_oeste, norte, nordeste,
+  agua_encanada, banheiro, esgotamento_sanitario, energia_eletrica, n_uc,
+  comodos, pr_idade, pr_anos_estudo, pr_masculino, pr_branco,
+   pr_formal, pr_horas_trabalhadas, bolsa_familia, PESO_FINAL, V6199) %>%
+   mutate(inseguranca_alimentar = if_else(V6199 != 1, 1, 0))%>%
+   mutate(inseguranca_grave = if_else(V6199 == 4, 1, 0),
+          inseguranca_moderada = if_else(V6199 == 3, 1, 0),
+          inseguranca_leve = if_else(V6199 == 2, 1, 0)) %>%
+   filter(RENDA_TOTAL_PC < 500)
+
+match_data <- match_data %>%
+  replace_na(list(pr_formal = 0, esgotamento_sanitario = 0, energia_eletrica = 0))
+
+summary(match_data$inseguranca_alimentar)
+
+
+m_out1 <- matchit(bolsa_familia ~ sudeste + sul + centro_oeste + norte +
+                  nordeste + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal,
+                  data = match_data,
+                  method = "cem", cutpoints = list(pr_anos_estudo = 5,
+                  n_uc = 3, comodos = 3, pr_idade = 5),
+                  s.weights = ~match_data$PESO_FINAL,
+                  estimand = "ATE",
+                  k2k = TRUE)
+
+
+m_out1
+summary(m_out1)
+
+md <- match.data(m_out1, include.s.weights = TRUE)
+log(criancas_0_5$RENDA_TOTAL_PC)
+
+plot(m_out1, type = "density", interactive = FALSE,
+which.xs = c("pr_idade", "pr_branco", "comodos"), subclass = 3)
+#Linear model with covariates
+
+fit3 <- lm(log(exp(pc_gasto)) ~ bolsa_familia + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal + inseguranca_alimentar, data = md,
+           weights = weights)
+
+coeftest(fit3, vcov. = vcovCL)["bolsa_familia",,drop=FALSE]
+fit1 <- lm(pc_gasto ~ bolsa_familia + pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal + inseguranca_alimentar, data = md, weights = weights)
+summary(fit1)
+summary(fit3)
+
+#Generalized linear model without covariates
+fit4 <- glm(inseguranca_leve ~ bolsa_familia, data = md, weights = weights, 
+            family = binomial(link = "logit"))
+
+coeftest(fit4, vcov. = vcovCL, cluster = ~subclass)
+
+fit3 <- glm(inseguranca_moderada ~ bolsa_familia, data = md, weights = weights,
+            family = quasibinomial(link = "log"))
+
+summary(lm(inseguranca_alimentar ~ bolsa_familia, data = md, weights = weights))
+coeftest(fit3, vcov. = vcovHC)
+exp(coef(fit3))
+coeftest(fit3, vcov. = vcovCL, cluster = ~subclass)
+
+
+#Bootstrap confidence intervals
+library(boot)
+
+est_fun <- function(data, i) {
+  #Subclassification function
+  mS_boot <- matchit(bolsa_familia ~ sudeste + sul + centro_oeste + norte +
+                  nordeste + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal,
+                  data = data[i,],
+                  method = "cem", cutpoints = list(pr_anos_estudo = 5,
+                  n_uc = 3, comodos = 3, pr_idade = 5),
+                  s.weights = ~data[i,]$PESO_FINAL,
+                  estimand = "ATE")
+  md_boot <- match.data(mS_boot)
+  
+  #Fitting the model
+  fit_boot <- glm(inseguranca_moderada ~ bolsa_familia + sudeste + sul + centro_oeste + norte +
+                  nordeste + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal, data = md_boot,
+                  family = quasibinomial(link = "logit"))
+  
+  #Estimate potential outcomes for each unit
+  
+
+  ##
+  
+  md_boot$bolsa_familia <- 0
+  P0 <- mean(predict(fit_boot, md_boot, type = "response"))
+  Odds0 <- P0 / (1 - P0)
+  
+  md_boot$bolsa_familia <- 1
+  P1 <- mean(predict(fit_boot, md_boot, type = "response"))
+  Odds1 <- P1 / (1 - P1)
+
+  #Return marginal odds ratio
+  return(Odds1 / Odds0)
+}
+
+boot_est <- boot(match_data, est_fun, R = 199)
+boot_est
+boot.ci(boot.out = boot_est, type = "all")
+
+
+match_data %>%
+  summarise(nas = sum(is.na(esgotamento_sanitario)))
+
+
+######### Mais um teste ########
+
+#Block bootstrap confidence interval
+# library(boot)
+
+pair_ids <- levels(md$subclass)
+
+est_fun <- function(pairs, i) {
+  
+  #Compute number of times each pair is present
+  numreps <- table(pairs[i])
+  
+  #For each pair p, copy corresponding md row indices numreps[p] times
+  ids <- unlist(lapply(pair_ids[pair_ids %in% names(numreps)],
+                       function(p) rep(which(md$subclass == p), 
+                                              numreps[p])))
+  
+  #Subset md with block bootstrapped ids
+  md_boot <- md[ids,]
+  
+  #Fitting outcome the model
+  fit_boot <- glm(inseguranca_grave ~ bolsa_familia + sudeste + sul + centro_oeste + norte +
+                  nordeste + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal, data = md_boot, 
+                  family = binomial(link = "logit"),
+                  weights = weights)
+  
+  #Estimate potential outcomes for each unit
+  #Under control
+  md_boot$bolsa_familia <- 0
+  P0 <- weighted.mean(predict(fit_boot, md_boot, type = "response"),
+                      w = md_boot$weights)
+  Odds0 <- P0 / (1 - P0)
+  
+  #Under treatment
+  md_boot$bolsa_familia <- 1
+  P1 <- weighted.mean(predict(fit_boot, md_boot, type = "response"),
+                      w = md_boot$weights)
+  Odds1 <- P1 / (1 - P1)
+
+  #Return marginal odds ratio
+  return(Odds1 / Odds0)
+}
+
+boot_est <- boot(pair_ids, est_fun, R = 499)
+boot_est
+
+boot.ci(boot_est, type = "all")
+
+md %>%
+  group_by(bolsa_familia) %>%
+  summarise(insegu = mean(RENDA_TOTAL_PC))
+
+fit1 <- lm(RENDA_TOTAL_PC ~ bolsa_familia + sudeste + sul + centro_oeste + norte +
+                  nordeste + agua_encanada + banheiro + esgotamento_sanitario +
+                  energia_eletrica + n_uc + comodos +
+                  pr_idade + pr_anos_estudo + pr_masculino +
+                  pr_branco + pr_formal, data = md, weights = weights)
+
+coeftest(fit1, vcov. = vcovHC)
+coeftest(fit1, vcov. = vcovCL, cluster = ~subclass)

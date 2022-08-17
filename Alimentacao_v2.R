@@ -66,3 +66,21 @@ pof_join_ex1 %>%
   summarise(media_carnes = sum(despesa_mensal_alimentacao*PESO_FINAL.x, na.rm = TRUE)/sum(PESO_FINAL.x)) %>% summary()
 
 summary(pof_join_ex1$PESO_FINAL.y)
+################
+
+pof_alimentacao1 <- pof_alimentacao %>% 
+  filter(nivel_0_alimentacao == 0) %>%
+  group_by(id_uc) %>% 
+  mutate(despesa_total_alimentacao = sum(valor_anualizado, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  distinct(id_uc, .keep_all = TRUE)
+
+pof_join_ex1 <- pof_morador_ex1 %>% 
+  left_join(pof_alimentacao1, by = "id_uc")
+
+### Teoricamente a media de gastos cm alimentacao por UC
+
+pof_join_ex1 %>%
+  group_by(id_uc) %>%
+  mutate(despesa_mensal_alimentacao = despesa_total_alimentacao/12) %>%
+  summarise(media_alimentacao = mean(despesa_mensal_alimentacao)) -> pc_teste 
